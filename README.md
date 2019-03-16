@@ -123,13 +123,6 @@ vim /var/log/grafana/grafana.log
 
 * * *
 
-### Update the Grafana Dashboard Configuration
-
-1. grafana dash board is defined in ```testnet-dashboard-stable.json```
-
-2. run ```init.sh``` to initilize metrics database
-
-3. 
 
 
 ### Install Influxdb
@@ -171,16 +164,22 @@ enable https, and set the endpoint to https://localhost:8086
 
 
 
-### configure metrics
+### Update the Grafana Dashboard Configuration
 
-set the configuration parameter 
+1. grafana dash board is defined in ```testnet-dashboard-stable.json```
+
+2. set the configuration parameter 
 
 ```bash
 export DASHBOARD_DB_CONFIG="host=<metrics host>,db=<database name>,u=<username>,p=<password>"
 ```
+3. run ```init.sh``` to initilize metrics database
 
+4. publish the dashboard
+
+    * make sure you have the access to avoid ```git@github.com: Permission denied (publickey)``
 ```bash
-./scripts/configure-metrics.sh
+./publish-metrics-dashboard.sh
 ```
 
 ### Install Rust
