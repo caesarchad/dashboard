@@ -156,26 +156,209 @@ Enter an InfluxQL query
 
 
 2. Configure Influxdb
+
+The configuration file for InfluxDB is ```influxdb.conf```, it has different location per different OS
+
+* Linux: ```/etc/influxdb/influxdb.conf```
+
+* MacOS: ```/usr/local/etc/influxdb.conf```
+
+```bash
+vim /etc/influxdb/influxdb.conf
+```
+
 enable https, and set the endpoint to https://localhost:8086
 
-3. create user for influxdb
+```
+[http]
 
-4. create a database
+  [...]
+
+  # Determines whether HTTPS is enabled.
+  https-enabled = true
+
+  [...]
+
+  # The TLS or SSL certificate to use when HTTPS is enabled.
+  https-certificate = "/etc/influxdb/selfsigned-influxdb.crt"
+
+  # Use a separate private key location.
+  https-private-key = "/etc/influxdb/selfsigned-influxdb.key"
+```
+
+generate certification file and key save to /etc/ssl/grafana-key.pem, /etc/ssl/grafana-cert.pem
+
+    move to grafana configuration directory
+```bash
+cd /etc/influxdb
+```
+    create a temporary self-signed certificate
+
+```bash
+openssl genrsa -out selfsigned-influxdb.key 2048
+openssl req -new -key selfsigned-influxdb.key -out selfsigned-influxdb.csr
+openssl x509 -req -days 365 -in selfsigned-influxdb.csr -signkey selfsigned-influxdb.key -out selfsigned-influxdb.crt
+```
+
+    Enter passphrase, and answers some stupid questions like 
+
+    * Country Name
+    * State
+    * Locality
+    * Orgnization 
+    * Unit Name 
+
+    change the certification and key file permission
+```bash
+chown influxdb:influxdb selfsigned-influxdb.crt
+chown influxdb:influxdb selfsigned-influxdb.key
+chmod 400 selfsigned-influxdb.crt 
+chmod 400 selfsigned-influxdb.key
+```
+
+check the influxdb 
+
+```
+sudo systemctl status influxdb
+
+```
+
+stop the influxdb 
+
+```
+sudo systemctl stop influxdb
+```
+
+resetart the infludb 
+
+```
+sudo systemctl restart influxdb
+```
+
+connect to https enabled influxdb, since we are using selfsigned certificate, make sure the ```unsafeSsl``` is used.
+
+```
+ influx  -ssl -unsafeSsl -host localhost
+
+```
+
+3. enable authentication
+
+```bash
+
+vim /etc/influxdb/influxdb.conf
 
 
+```
+
+```bash
+
+[http]
+
+# Determines whether user authentication is enabled over HTTP/HTTPS.
+  auth-enabled = true
+```
+
+restart the influxdb
+
+```
+sudo systemctl stop influxdb
+sudo systemctl restart influxdb
+sudo systemctl status influxdb
+```
+4. create user for influxdb
+
+```bash
+influx  -ssl -unsafeSsl -host localhost
+```
+create admin, and a user with admin access
+
+```bash
+CREATE USER admin WITH PASSWORD '<password>' WITH ALL PRIVILEGES
+
+```
+log off and log in again
+```
+influx  -ssl -unsafeSsl -host localhost -username 'admin' -password '<password>'
+
+```
+create another user with admin access, and log in using the new user
+```bash
+CREATE USER caesar WITH PASSWORD '<password>' WITH ALL PRIVILEGES
+exit
+influx  -ssl -unsafeSsl -host localhost -username 'caesar' -password '<password>'
+```
+try new user's access, a dummy db is created and dropped.
+
+```bash 
+> SHOW  USERS
+
+> SHOW DATABASES
+
+> CREATE DATABASE dummy1
+
+> SHOW DATABASES
+
+name: databases
+name
+----
+_internal
+dummy1
+
+> DROP DATABASE dummy1
+> SHOW DATABASES
+name: databases
+name
+----
+_internal
+
+> CREATE DATABASE dashboard01
+```
 
 ### Update the Grafana Dashboard Configuration
 
-1. grafana dash board is defined in ```testnet-dashboard-stable.json```
+- grafana dash board is defined in ```testnet-dashboard-stable.json```
 
-2. set the configuration parameter 
+- set Grafna API Token 
+
+    create an orgnization in the dashboard
+```bash
+
+curl -k -X POST -H "Content-Type: application/json" -d '{"name":"dev-org"}' https://admin:<password>@localhost:9530/api/orgs
+
+{"message":"Organization created","orgId":3}
+
+```
+an orgnization with id ``3`` is created
+
+```
+curl -k -X POST https://admin:<password>@localhost:9530/api/user/using/3
+
+{"message":"Active organization changed"}
+
+```
+
+create the API token 
+
+```
+curl -k -X POST -H "Content-Type: application/json" -d '{"name":"apikeycurl", "role": "Admin"}' https://admin:zaq12wsx@localhost:9530/api/auth/keys
+
+>{"name":"apikeycurl","key":"eyJrIjoiUWJmTk9hRkx2anVCekVRSWU3UGN3ZkhiM2kxV1I0bnEiLCJuIjoiYXBpa2V5Y3VybCIsImlkIjozfQ=="}
+
+```
+
+set the GRAFANA_API_TOKEN
+
+```
+$ export GRAFANA_API_TOKEN="eyJrIjoiUWJmTk9hRkx2anVCekVRSWU3UGN3ZkhiM2kxV1I0bnEiLCJuIjoiYXBpa2V5Y3VybCIsImlkIjozfQ=="
+- set the configuration parameter 
 
 ```bash
-export DASHBOARD_DB_CONFIG="host=<metrics host>,db=<database name>,u=<username>,p=<password>"
+export DASHBOARD_DB_CONFIG="host=localhost,db=dashboard01,u=caesar,p=<password>"
 ```
-3. run ```init.sh``` to initilize metrics database
+- run ```init.sh``` to initilize metrics database
 
-4. publish the dashboard
+- publish the dashboard
 
     * make sure you have the access to avoid ```git@github.com: Permission denied (publickey)``
 ```bash
