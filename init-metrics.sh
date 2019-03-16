@@ -61,7 +61,7 @@ else
 
   query() {
     echo "$*"
-    curl -XPOST \
+    curl -k -XPOST \
       "https://127.0.0.1:8086/query?u=${username}&p=${password}" \
       --data-urlencode "q=$*"
   }
