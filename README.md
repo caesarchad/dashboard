@@ -129,7 +129,13 @@ vim /var/log/grafana/grafana.log
 
 
 1. install influxdb
+download and manually install
 
+```
+wget https://dl.influxdata.com/influxdb/releases/influxdb_1.5.0_amd64.deb
+sudo dpkg -i influxdb_1.5.0_amd64.deb
+
+```
 add apt repo from the [offical website](https://docs.influxdata.com/influxdb/v1.7/introduction/installation/)
 ```
 
@@ -202,11 +208,12 @@ openssl x509 -req -days 365 -in selfsigned-influxdb.csr -signkey selfsigned-infl
 
     Enter passphrase, and answers some stupid questions like 
 
-    * Country Name
-    * State
-    * Locality
-    * Orgnization 
-    * Unit Name 
+    * Country Name: US
+    * State: CA
+    * Locality: LA
+    * Orgnization: Bitconch PTE Ltd.
+    * Unit Name: Dev-Dashboard-InfluxDB
+    * Common Name: https://47.103.38.208:8086(server ip)
 
     change the certification and key file permission
 ```bash
@@ -315,6 +322,25 @@ _internal
 > CREATE DATABASE dashboard01
 ```
 
+### Add InfluxDB Self Signed Certificate 
+
+* Ubuntu 
+
+
+* Windows
+
+    Download the /etc/influxdb/selfsigned-influxdb.crt
+```powershell
+scp -r -P 22 user@remote_host:/etc/influxdb/selfsigned-influxdb.crt remote_influxdb.crt
+```
+
+    Double click the crt file and resave to cer file 
+
+    Open and Run MMC
+
+    Import the crt file
+
+
 ### Update the Grafana Dashboard Configuration
 
 - grafana dash board is defined in ```testnet-dashboard-stable.json```
@@ -344,7 +370,9 @@ create the API token
 curl -k -X POST -H "Content-Type: application/json" -d '{"name":"apikeycurl", "role": "Admin"}' https://admin:zaq12wsx@localhost:9530/api/auth/keys
 
 >{"name":"apikeycurl","key":"eyJrIjoiUWJmTk9hRkx2anVCekVRSWU3UGN3ZkhiM2kxV1I0bnEiLCJuIjoiYXBpa2V5Y3VybCIsImlkIjozfQ=="}
-
+>{"name":"apikeycurl2","key":"eyJrIjoiTVdRaEFiRDF0SThCTjJQTTdOckR2SElndjZ5ZThxdnAiLCJuIjoiYXBpa2V5Y3VybDIiLCJpZCI6M30="}
+>{"name":"apikeycurl3","key":"eyJrIjoieG5IbmllOGxJWW9MY3o1dGlmMmNPU0dERzVzYzFKR0EiLCJuIjoiYXBpa2V5Y3VybDMiLCJpZCI6M30="}
+>{"name":"dummy1","key":"eyJrIjoid2cyYUlrUnF2OHpIRlNLcW1sMzFYS3MwOEpWUzF6dXgiLCJuIjoiZHVtbXkxIiwiaWQiOjN9"}
 ```
 
 set the GRAFANA_API_TOKEN
@@ -354,12 +382,18 @@ $ export GRAFANA_API_TOKEN="eyJrIjoiUWJmTk9hRkx2anVCekVRSWU3UGN3ZkhiM2kxV1I0bnEi
 - set the configuration parameter 
 
 ```bash
-export DASHBOARD_DB_CONFIG="host=localhost,db=dashboard01,u=caesar,p=<password>"
+export DASHBOARD_DB_CONFIG="host=localhost,db=dashboard02,u=caesar,p=<password>"
 ```
-- run ```init.sh``` to initilize metrics database
+- run ```init.sh``` to initilize metrics database.
+
+    This will set env var ```DASHBOARD_DB_CONFIG```,```
 
 - publish the dashboard
 
+    * install python3 venv
+```
+sudo apt-get install python3-venv
+```
     * make sure you have the access to avoid ```git@github.com: Permission denied (publickey)``
 ```bash
 ./publish-metrics-dashboard.sh
@@ -403,7 +437,6 @@ E: The list of sources could not be read.
 ```
 This error message told us the 63 line of the file ```/etc/apt/sources.list``` is invalid, so just commented out the line would be ok. 
 use vim to open /etc/apt/sources.list, and comment out the 63 line, or any other number of line
-
 
 ### Solutions for error likes: git@github.com: Permission denied (publickey).
 
