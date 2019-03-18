@@ -438,7 +438,6 @@ E: The list of sources could not be read.
 This error message told us the 63 line of the file ```/etc/apt/sources.list``` is invalid, so just commented out the line would be ok. 
 use vim to open /etc/apt/sources.list, and comment out the 63 line, or any other number of line
 
-
 ### Solutions for error likes: git@github.com: Permission denied (publickey).
 
 A "Permission denied" error means that the server rejected your connection. on your local machine, you haven't made any SSH keys.
